@@ -396,6 +396,16 @@ def stepik_update_course(
 
 
 @mcp.tool()
+def stepik_delete_course(course_id: int) -> dict[str, Any]:
+    """Permanently delete a course by ID."""
+    try:
+        get_client().delete_course(course_id)
+    except StepikError as exc:
+        return {"error": str(exc)}
+    return {"deleted": course_id}
+
+
+@mcp.tool()
 def stepik_create_section(course_id: int, title: str, position: int = 1) -> dict[str, Any]:
     try:
         s = get_client().create_section(course_id, title, position=position)
@@ -548,6 +558,7 @@ def stepik_create_choice_step(
                         "preserve_order": False,
                         "is_multiple_choice": len(correct) > 1,
                         "sample_size": len(choices),
+                        "is_options_feedback": False,
                     },
                 },
             }
@@ -562,10 +573,11 @@ def stepik_create_code_step(
     lesson_id: int,
     text: str,
     language: str = "python3",
-    templates_data: str = "",
+    templates_data: str = "print()",
     test_cases_json: str = "[]",
     position: int = 1,
 ) -> dict[str, Any]:
+    _ = language  # templates_data encodes language on Stepik
     try:
         tests = json.loads(test_cases_json)
         s = get_client().create_step_source(
@@ -576,11 +588,18 @@ def stepik_create_code_step(
                     "name": "code",
                     "text": text,
                     "source": {
-                        "language": language,
-                        "templates_data": templates_data,
+                        "execution_time_limit": 5,
+                        "execution_memory_limit": 256,
+                        "samples_count": 1,
+                        "templates_data": templates_data or "print()",
+                        "code": "",
+                        "manual_time_limits": [],
+                        "manual_memory_limits": [],
+                        "test_archive": [],
                         "test_cases": tests,
-                        "is_time_limit": False,
-                        "is_memory_limit": False,
+                        "is_run_user_code_allowed": True,
+                        "is_time_limit_scaled": False,
+                        "is_memory_limit_scaled": False,
                     },
                 },
             }
@@ -620,7 +639,13 @@ def stepik_create_string_step(
                 "block": {
                     "name": "string",
                     "text": text,
-                    "source": {"pattern": pattern, "case_sensitive": case_sensitive},
+                    "source": {
+                        "pattern": pattern,
+                        "code": "",
+                        "case_sensitive": case_sensitive,
+                        "use_re": False,
+                        "match_substring": False,
+                    },
                 },
             }
         )
@@ -663,7 +688,15 @@ def stepik_create_matching_step(
             {
                 "lesson": lesson_id,
                 "position": position,
-                "block": {"name": "matching", "text": text, "source": {"pairs": pairs}},
+                "block": {
+                    "name": "matching",
+                    "text": text,
+                    "source": {
+                        "pairs": pairs,
+                        "preserve_firsts_order": True,
+                        "is_html_enabled": True,
+                    },
+                },
             }
         )
     except (StepikError, json.JSONDecodeError) as exc:

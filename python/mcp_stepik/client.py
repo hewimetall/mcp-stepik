@@ -22,7 +22,7 @@ class StepikClient:
         client_id: str | None = None,
         client_secret: str | None = None,
         api_host: str | None = None,
-        timeout: float = 30.0,
+        timeout: float = 60.0,
     ) -> None:
         self.client_id = client_id or STEPIK_CLIENT_ID
         self.client_secret = client_secret or STEPIK_CLIENT_SECRET
@@ -116,14 +116,37 @@ class StepikClient:
         return self.post("courses", json_body=body)["courses"][0]
 
     def update_course(self, course_id: int, **fields: Any) -> dict[str, Any]:
+        # Stepik PUT requires title; merge with current course when omitted.
+        if "title" not in fields:
+            current = self.get_course(course_id)
+            fields = {"title": current["title"], **fields}
         return self.put(f"courses/{course_id}", json_body={"course": fields})["courses"][0]
 
     def publish_course(self, course_id: int) -> dict[str, Any]:
         return self.update_course(course_id, is_enabled=True)
 
+    def delete_course(self, course_id: int) -> None:
+        self.delete(f"courses/{course_id}")
+
     # --- sections ---
     def list_sections(self, course_id: int) -> list[dict[str, Any]]:
-        return self.get("sections", params={"course": course_id}).get("sections") or []
+        # Filter ?course= often returns [] for drafts; use course.sections + ids[].
+        course = self.get_course(course_id)
+        ids = course.get("sections") or []
+        if not ids:
+            return []
+        params: list[tuple[str, Any]] = [("ids[]", i) for i in ids]
+        # httpx supports list of tuples
+        token = self._get_token()
+        url = f"{self.api_host}/api/sections"
+        resp = self._http.get(
+            url,
+            params=params,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if resp.status_code >= 400:
+            raise StepikError(f"HTTP {resp.status_code} GET {url}: {resp.text}")
+        return resp.json().get("sections") or []
 
     def create_section(self, course_id: int, title: str, position: int = 1) -> dict[str, Any]:
         body = {"section": {"course": course_id, "title": title, "position": position}}
@@ -160,7 +183,24 @@ class StepikClient:
         return self.post("units", json_body=body)["units"][0]
 
     def list_units(self, section_id: int) -> list[dict[str, Any]]:
-        return self.get("units", params={"section": section_id}).get("units") or []
+        # GET /units?section=… often 500; prefer section.units + ids[].
+        rows = self.get(f"sections/{section_id}").get("sections") or []
+        if not rows:
+            return []
+        ids = rows[0].get("units") or []
+        if not ids:
+            return []
+        token = self._get_token()
+        url = f"{self.api_host}/api/units"
+        params: list[tuple[str, Any]] = [("ids[]", i) for i in ids]
+        resp = self._http.get(
+            url,
+            params=params,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if resp.status_code >= 400:
+            raise StepikError(f"HTTP {resp.status_code} GET {url}: {resp.text}")
+        return resp.json().get("units") or []
 
     def delete_unit(self, unit_id: int) -> None:
         self.delete(f"units/{unit_id}")
@@ -179,7 +219,8 @@ class StepikClient:
         )["step-sources"][0]
 
     def delete_step(self, step_id: int) -> None:
-        self.delete(f"steps/{step_id}")
+        # DELETE /api/steps/{id} → 405; use step-sources.
+        self.delete(f"step-sources/{step_id}")
 
     # --- videos ---
     def upload_video(
