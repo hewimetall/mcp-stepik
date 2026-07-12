@@ -1,0 +1,26 @@
+# Production-oriented run of mcp-stepik from GHCR.
+# Requires Stepik OAuth (Confidential + Client credentials).
+#
+#   export STEPIK_CLIENT_ID=...
+#   export STEPIK_CLIENT_SECRET=...
+#   docker compose up -d
+
+services:
+  mcp-stepik:
+    image: ghcr.io/hewimetall/mcp-stepik:0.1.0
+    ports:
+      - "${MCP_STEPIK_PORT:-8000}:8000"
+    environment:
+      STEPIK_CLIENT_ID: ${STEPIK_CLIENT_ID:?set STEPIK_CLIENT_ID}
+      STEPIK_CLIENT_SECRET: ${STEPIK_CLIENT_SECRET:?set STEPIK_CLIENT_SECRET}
+      MCP_STEPIK_HOST: "0.0.0.0"
+      MCP_STEPIK_PORT: "8000"
+      MCP_STEPIK_STATE: /data/state
+      MCP_STEPIK_PROJECTS: /data/projects
+      MCP_STEPIK_WORKSPACES: /data/workspaces
+    volumes:
+      - mcp-stepik-data:/data
+    restart: unless-stopped
+
+volumes:
+  mcp-stepik-data:
