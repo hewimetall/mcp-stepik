@@ -27,22 +27,32 @@ create_session
 Пример IR: [`examples/demo/course.ir.json`](examples/demo/course.ir.json)  
 Schema: [`schemas/course.ir.schema.json`](schemas/course.ir.schema.json)
 
-## Run (HTTP only)
+## Production (Docker / GHCR)
+
+Image: [`ghcr.io/hewimetall/mcp-stepik`](https://github.com/hewimetall/mcp-stepik/pkgs/container/mcp-stepik)  
+Tags: `0.1.0`, `0.1`, `0`, `latest` (built on git tag `v*`).
 
 ```bash
-uv sync --extra dev
-(cd packages/mcp-stepik-state && maturin develop)
-maturin develop
-
 export STEPIK_CLIENT_ID=...
 export STEPIK_CLIENT_SECRET=...
-export MCP_STEPIK_HOST=127.0.0.1
-export MCP_STEPIK_PORT=8000
-uv run mcp-stepik
+
+# one-shot
+docker run --rm -p 8000:8000 \
+  -e STEPIK_CLIENT_ID -e STEPIK_CLIENT_SECRET \
+  -v mcp-stepik-data:/data \
+  ghcr.io/hewimetall/mcp-stepik:0.1.0
+
+# or compose
+docker compose up -d
 ```
+
+Container defaults: listen `0.0.0.0:8000`, persist under `/data` (`state`, `projects`, `workspaces`).  
+MCP endpoint: `http://<host>:8000/mcp`
 
 OAuth app: https://stepik.org/oauth2/applications/  
 (`Confidential` + `Client credentials`)
+
+If the package is private: `echo $GHCR_TOKEN | docker login ghcr.io -u USER --password-stdin`
 
 ### Cursor / HTTP MCP
 
@@ -54,6 +64,20 @@ OAuth app: https://stepik.org/oauth2/applications/
     }
   }
 }
+```
+
+## Run locally (HTTP only)
+
+```bash
+uv sync --extra dev
+(cd packages/mcp-stepik-state && maturin develop)
+maturin develop
+
+export STEPIK_CLIENT_ID=...
+export STEPIK_CLIENT_SECRET=...
+export MCP_STEPIK_HOST=127.0.0.1
+export MCP_STEPIK_PORT=8000
+uv run mcp-stepik
 ```
 
 Env for data dirs (optional):
@@ -82,6 +106,7 @@ text, choice, code, video, string, number, matching, sorting, free-answer, revie
 
 ## Docs
 
+- Changelog: [`CHANGELOG.md`](CHANGELOG.md)
 - Architecture: [`docs/architecture/OVERVIEW.md`](docs/architecture/OVERVIEW.md)
 - ADR: [`docs/adr/`](docs/adr/README.md)
 
