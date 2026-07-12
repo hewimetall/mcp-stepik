@@ -1,0 +1,99 @@
+[build-system]
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
+
+[project]
+name = "mcp-stepik-core"
+version = "0.1.0"
+description = "MCP server for Stepik course authoring (FastMCP + Rust state/tasks)"
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = [
+    "fastmcp>=2.3.0",
+    "httpx>=0.28",
+    "pydantic>=2.10",
+    "mcp-stepik-state",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=6",
+    "ruff>=0.12",
+    "mypy>=1.16",
+    "maturin>=1.8,<2",
+    "respx>=0.22",
+]
+
+[project.scripts]
+mcp-stepik = "mcp_stepik.server:main"
+
+[tool.maturin]
+features = ["extension-module"]
+python-source = "python"
+module-name = "mcp_stepik._tasks"
+
+[tool.uv]
+package = true
+
+[tool.uv.workspace]
+members = [
+    ".",
+    "packages/mcp-stepik-state",
+]
+
+[tool.uv.sources]
+mcp-stepik-state = { workspace = true }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["python", "tests", "packages"]
+extend-exclude = ["target", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mcp_stepik", "mcp_state"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "python:packages/mcp-stepik-state/python"
+packages = ["mcp_stepik", "mcp_state"]
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["mcp_stepik._tasks", "mcp_state._native"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["mcp_stepik.ir_models"]
+disallow_any_explicit = false
+disallow_any_generics = false
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=mcp_stepik",
+    "--cov-report=term-missing",
+    "--cov-fail-under=89",
+]
+
+[tool.coverage.run]
+branch = false
+source = ["mcp_stepik"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]
+show_missing = true

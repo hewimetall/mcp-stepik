@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
+
+[project]
+name = "mcp-stepik-state"
+version = "0.1.0"
+description = "Persistent sessions and workspaces (Rust PyO3 + embedded SQLite)"
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.maturin]
+features = ["extension-module"]
+python-source = "python"
+module-name = "mcp_state._native"
