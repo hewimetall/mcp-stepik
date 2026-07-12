@@ -1,0 +1,4 @@
+# Workspace-level Clippy defaults (cargo clippy --workspace)
+warn-on-all-wildcard-imports = true
+allow-expect-in-tests = true
+allow-unwrap-in-tests = true

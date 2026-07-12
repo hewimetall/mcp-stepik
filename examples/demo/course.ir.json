@@ -1,0 +1,40 @@
+{
+  "course": {
+    "title": "Demo Python Course",
+    "summary": "Короткий демо-курс",
+    "description": "<p>Описание</p>",
+    "language": "ru"
+  },
+  "sections": [
+    {
+      "title": "Модуль 1",
+      "lessons": [
+        {
+          "title": "Введение",
+          "is_public": true,
+          "steps": [
+            {
+              "type": "text",
+              "html": "<p>Добро пожаловать</p>"
+            },
+            {
+              "type": "choice",
+              "question": "2+2=?",
+              "options": [
+                {"text": "3", "is_correct": false},
+                {"text": "4", "is_correct": true}
+              ]
+            },
+            {
+              "type": "code",
+              "text": "<p>Напишите hello</p>",
+              "language": "python3",
+              "templates_data": "print()",
+              "test_cases": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
