@@ -179,6 +179,9 @@ def test_stepik_crud_wrappers(monkeypatch: pytest.MonkeyPatch) -> None:
         def create_course(self, title: str, **kw: Any) -> dict[str, Any]:
             return {"id": 2, "title": title}
 
+        def delete_course(self, course_id: int) -> None:
+            return None
+
         def update_course(self, course_id: int, **kw: Any) -> dict[str, Any]:
             return {"id": course_id, "title": kw.get("title", "A"), "is_enabled": kw.get("is_enabled")}
 
@@ -217,6 +220,7 @@ def test_stepik_crud_wrappers(monkeypatch: pytest.MonkeyPatch) -> None:
     assert server.stepik_list_courses()["courses"][0]["id"] == 1
     assert server.stepik_get_course(1)["id"] == 1
     assert server.stepik_create_course("X")["id"] == 2
+    assert server.stepik_delete_course(2)["deleted"] == 2
     assert server.stepik_update_course(2, title="Y")["id"] == 2
     assert server.stepik_create_section(2, "S")["id"] == 3
     assert server.stepik_update_section(3, title="S2")["id"] == 3
@@ -273,6 +277,9 @@ def test_stepik_crud_errors(monkeypatch: pytest.MonkeyPatch) -> None:
         def create_course(self, title: str, **kw: Any) -> dict[str, Any]:
             raise StepikError("x")
 
+        def delete_course(self, course_id: int) -> None:
+            raise StepikError("x")
+
         def update_course(self, course_id: int, **kw: Any) -> dict[str, Any]:
             raise StepikError("x")
 
@@ -310,6 +317,7 @@ def test_stepik_crud_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "error" in server.stepik_list_courses()
     assert "error" in server.stepik_get_course(1)
     assert "error" in server.stepik_create_course("t")
+    assert "error" in server.stepik_delete_course(1)
     assert "error" in server.stepik_update_course(1, title="t")
     assert "error" in server.stepik_create_section(1, "s")
     assert "error" in server.stepik_update_section(1, title="s")

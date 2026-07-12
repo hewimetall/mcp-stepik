@@ -63,6 +63,9 @@ def test_crud_surface(client: StepikClient) -> None:
             200, json={"units": [{"id": 4, "section": 2, "lesson": 3}]}
         )
     )
+    respx.get("https://stepik.test/api/sections/2").mock(
+        return_value=httpx.Response(200, json={"sections": [{"id": 2, "units": [4]}]})
+    )
     respx.get("https://stepik.test/api/units").mock(
         return_value=httpx.Response(200, json={"units": [{"id": 4, "lesson": 3}]})
     )
@@ -78,7 +81,7 @@ def test_crud_surface(client: StepikClient) -> None:
     respx.put("https://stepik.test/api/step-sources/5").mock(
         return_value=httpx.Response(200, json={"step-sources": [{"id": 5}]})
     )
-    respx.delete("https://stepik.test/api/steps/5").mock(return_value=httpx.Response(204))
+    respx.delete("https://stepik.test/api/step-sources/5").mock(return_value=httpx.Response(204))
     respx.get("https://stepik.test/api/videos/9").mock(
         return_value=httpx.Response(
             200, json={"videos": [{"id": 9, "status": "ready"}]}
@@ -89,7 +92,8 @@ def test_crud_surface(client: StepikClient) -> None:
     assert client.get_course(1)["id"] == 1
     assert client.update_course(1, title="B")["title"] == "B"
     assert client.publish_course(1)["is_enabled"] is True
-    assert client.list_sections(1)
+    # list_sections uses course.sections + ids[]; stub course already returned sections=[]
+    assert client.list_sections(1) == []
     assert client.create_section(1, "S")["id"] == 2
     assert client.update_section(2, title="S2")["title"] == "S2"
     client.delete_section(2)

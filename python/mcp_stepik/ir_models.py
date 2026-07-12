@@ -189,6 +189,7 @@ def step_to_block(step: Step) -> dict[str, Any]:
                 "preserve_order": False,
                 "is_multiple_choice": multi,
                 "sample_size": len(step.options),
+                "is_options_feedback": False,
             },
         }
     if isinstance(step, CodeStep):
@@ -196,11 +197,18 @@ def step_to_block(step: Step) -> dict[str, Any]:
             "name": "code",
             "text": step.text,
             "source": {
-                "language": step.language,
-                "templates_data": step.templates_data,
+                "execution_time_limit": 5,
+                "execution_memory_limit": 256,
+                "samples_count": 1,
+                "templates_data": step.templates_data or "print()",
+                "code": "",
+                "manual_time_limits": [],
+                "manual_memory_limits": [],
+                "test_archive": [],
                 "test_cases": step.test_cases,
-                "is_time_limit": False,
-                "is_memory_limit": False,
+                "is_run_user_code_allowed": True,
+                "is_time_limit_scaled": False,
+                "is_memory_limit_scaled": False,
             },
         }
     if isinstance(step, VideoStep):
@@ -211,7 +219,13 @@ def step_to_block(step: Step) -> dict[str, Any]:
         return {
             "name": "string",
             "text": step.text,
-            "source": {"pattern": step.pattern, "case_sensitive": step.case_sensitive},
+            "source": {
+                "pattern": step.pattern,
+                "code": "",
+                "case_sensitive": step.case_sensitive,
+                "use_re": False,
+                "match_substring": False,
+            },
         }
     if isinstance(step, NumberStep):
         return {
@@ -223,7 +237,11 @@ def step_to_block(step: Step) -> dict[str, Any]:
         return {
             "name": "matching",
             "text": step.text,
-            "source": {"pairs": [{"first": p.first, "second": p.second} for p in step.pairs]},
+            "source": {
+                "pairs": [{"first": p.first, "second": p.second} for p in step.pairs],
+                "preserve_firsts_order": True,
+                "is_html_enabled": True,
+            },
         }
     if isinstance(step, SortingStep):
         return {
